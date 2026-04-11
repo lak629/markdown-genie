@@ -1,4 +1,4 @@
-# Markdown Genie — Business Adoption Guide
+# Markdown Genie - Ingest Everything
 
 ## Welcome
 
