@@ -1,4 +1,4 @@
-# Markdown Genie - Ingest Everything
+# Markdown Genie - Read Everything
 
 ## Welcome
 
