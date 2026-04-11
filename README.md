@@ -68,14 +68,14 @@ Markdown Genie starts with a strong focus on developer-friendly tooling and busi
 
 ## How to use this repo
 
-This repository is the home of Markdown Genie product development. It includes everything needed to:
+This repository is the home of Markdown Genie product development. We are currently starting with a VSCode extention of **Markdown Genie**.
 
-- prototype the VS Code editor experience,
-- validate markdown workflows,
-- test business-friendly editing patterns,
-- and build the foundation for future Word and cross-platform deployments.
+The repo is broken up into the following directories:
+- images - any images used for the product or testing.  Currently just my dork icons for the product.
+- test - any files used to test the product.  Mostly markdown files with different formatting.
+- vscode - this is the inital repo for the first product deployment of **Markdown Genie**. You can find detailed documentation in the README.md file in that directory.
 
-If you are visiting this repo for the first time, start with the `README.md` for developer setup, then use `business_readme.md` for the product vision and adoption strategy.
+If you are visiting this repo for the first time, start with the `README.md` for developer setup in the vscode directory, then use this README.md for the product vision and adoption strategy.
 
 ---
 
