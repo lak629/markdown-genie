@@ -1,0 +1,59 @@
+{
+  "name": "markdown-genie",
+  "displayName": "Markdown Genie",
+  "description": "A VS Code custom editor for Markdown with ribbon formatting, image handling, Mermaid preview, tables, and frontmatter protection.",
+  "version": "0.2.0",
+  "publisher": "local-dev",
+  "author": "Lou Kaltz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lak629/markdown-genie"
+  },
+  "icon": "markdown-genie-icon.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onCustomEditor:advancedMarkdownWysiwyg.editor",
+    "onCommand:advancedMarkdownWysiwyg.openEditor"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "advancedMarkdownWysiwyg.openEditor",
+        "title": "Open Markdown Genie"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "advancedMarkdownWysiwyg.editor",
+        "displayName": "Markdown Genie",
+        "selector": [
+          { "filenamePattern": "*.md" },
+          { "filenamePattern": "*.markdown" }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "marked": "^15.0.12",
+    "mermaid": "^11.12.0",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
+  }
+}
