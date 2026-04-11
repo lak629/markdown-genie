@@ -70,7 +70,7 @@ This file exercises the Markdown Genie editor features, including formatting, li
 
 Inline image reference to verify asset handling:
 
-![Markdown Genie sample image](./markdown-genie.png)
+![Markdown Genie sample image](../images/markdown-genie.png)
 
 > Note: Replace `./markdown-genie.assets/sample-image.png` with a real image path after import.
 
@@ -114,7 +114,7 @@ console.log(greet('Markdown Genie'));
 
 This paragraph contains **bold**, *italic*, and `inline code` together. It should still round-trip correctly when edited.
 
-- A list item with an [inline link](https://example.com)
+- A list item with an [inline link](https://markdowngenie.com)
 - A second list item with **bold text** and a `code span`
 
 ## 10. Final Review
