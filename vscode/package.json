@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/lak629/markdown-genie"
   },
-  "icon": "markdown-genie-icon.png",
+  "icon": "./icon/markdown-genie-icon-v2.png",
   "engines": {
     "vscode": "^1.90.0"
   },
