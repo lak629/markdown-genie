@@ -57,10 +57,18 @@ To install this extension locally in VS Code:
 6.  Package the extension:
     
     ```bash
-    vsce package
+    npm run package
     ```
     
-    This will create a `.vsix` file (e.g., `markdown-genie-0.2.0.vsix`).
+    This command runs the `prepackage` lifecycle script first, which bumps the patch version and compiles the extension. Then it packages the VSIX into `build/`, for example `build/markdown-genie-0.2.1.vsix`.
+    
+    The full flow is:
+    ```bash
+    npm run prepackage
+    npm run package
+    ```
+    
+    But you only need to run `npm run package` because npm executes `prepackage` automatically.
     
 7.  In VS Code, open the Extensions view (Ctrl+Shift+X), click the "..." menu, and select "Install from VSIX...".
     

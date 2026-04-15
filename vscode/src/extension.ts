@@ -281,6 +281,17 @@ class AdvancedMarkdownEditorProvider implements vscode.CustomTextEditorProvider 
         </div>
       </div>
       <div class="ribbon-group">
+        <div class="ribbon-group-title">Table</div>
+        <div class="ribbon-buttons">
+          <button id="addRowAboveBtn">Row above</button>
+          <button id="addRowBelowBtn">Row below</button>
+          <button id="deleteRowBtn">Delete row</button>
+          <button id="addColLeftBtn">Col left</button>
+          <button id="addColRightBtn">Col right</button>
+          <button id="deleteColBtn">Delete column</button>
+        </div>
+      </div>
+      <div class="ribbon-group">
         <div class="ribbon-group-title">View</div>
         <div class="ribbon-buttons">
           <button id="refreshMermaidBtn">Refresh Diagrams</button>

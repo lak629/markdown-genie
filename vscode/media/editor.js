@@ -263,6 +263,125 @@
     scheduleSave();
   }
 
+  function getSelectedCell() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return null;
+    }
+    let node = selection.anchorNode;
+    while (node && node !== editorHost && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
+      node = node.parentElement;
+    }
+    return node && (node.nodeName === 'TD' || node.nodeName === 'TH') ? node : null;
+  }
+
+  function createTableRow(cellCount, cellType = 'td') {
+    const tr = document.createElement('tr');
+    for (let i = 0; i < cellCount; i += 1) {
+      const cell = document.createElement(cellType);
+      cell.textContent = '';
+      tr.appendChild(cell);
+    }
+    return tr;
+  }
+
+  function addTableRow(position) {
+    const cell = getSelectedCell();
+    if (!cell) return;
+
+    const row = cell.parentElement;
+    const table = row.closest('table');
+    if (!table) return;
+
+    const cellCount = row.children.length;
+    const isHeader = row.querySelector('th') !== null;
+    const newRow = createTableRow(cellCount, isHeader ? 'th' : 'td');
+
+    if (position === 'above') {
+      row.parentElement.insertBefore(newRow, row);
+    } else {
+      row.parentElement.insertBefore(newRow, row.nextSibling);
+    }
+
+    scheduleSave();
+  }
+
+  function deleteTableRow() {
+    const cell = getSelectedCell();
+    if (!cell) return;
+
+    const row = cell.parentElement;
+    const table = row.closest('table');
+    if (!table) return;
+
+    row.remove();
+    if (table.querySelectorAll('tr').length === 0) {
+      table.remove();
+    }
+
+    scheduleSave();
+  }
+
+  function addTableColumn(position) {
+    const cell = getSelectedCell();
+    if (!cell) return;
+
+    const row = cell.parentElement;
+    const table = row.closest('table');
+    if (!table) return;
+
+    const cellIndex = Array.from(row.children).indexOf(cell);
+    const rows = Array.from(table.querySelectorAll('tr'));
+
+    rows.forEach((currentRow) => {
+      const referenceCell = currentRow.children[cellIndex];
+      const newCellType = referenceCell ? referenceCell.nodeName.toLowerCase() : 'td';
+      const newCell = document.createElement(newCellType);
+      newCell.textContent = '';
+
+      if (position === 'left') {
+        if (referenceCell) {
+          currentRow.insertBefore(newCell, referenceCell);
+        } else {
+          currentRow.appendChild(newCell);
+        }
+      } else {
+        if (referenceCell && referenceCell.nextSibling) {
+          currentRow.insertBefore(newCell, referenceCell.nextSibling);
+        } else {
+          currentRow.appendChild(newCell);
+        }
+      }
+    });
+
+    scheduleSave();
+  }
+
+  function deleteTableColumn() {
+    const cell = getSelectedCell();
+    if (!cell) return;
+
+    const row = cell.parentElement;
+    const table = row.closest('table');
+    if (!table) return;
+
+    const cellIndex = Array.from(row.children).indexOf(cell);
+    const rows = Array.from(table.querySelectorAll('tr'));
+
+    rows.forEach((currentRow) => {
+      const targetCell = currentRow.children[cellIndex];
+      if (targetCell) {
+        targetCell.remove();
+      }
+    });
+
+    if (table.querySelectorAll('tr').length === 0 || table.querySelectorAll('tr:first-child td, tr:first-child th').length === 0) {
+      table.remove();
+    }
+
+    scheduleSave();
+  }
+
   function insertMermaidBlock() {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
@@ -340,6 +459,12 @@
 
   document.getElementById('toggleCodeBlock').addEventListener('click', toggleCodeBlock);
   document.getElementById('insertTableBtn').addEventListener('click', () => insertTable(3, 3));
+  document.getElementById('addRowAboveBtn').addEventListener('click', () => addTableRow('above'));
+  document.getElementById('addRowBelowBtn').addEventListener('click', () => addTableRow('below'));
+  document.getElementById('deleteRowBtn').addEventListener('click', deleteTableRow);
+  document.getElementById('addColLeftBtn').addEventListener('click', () => addTableColumn('left'));
+  document.getElementById('addColRightBtn').addEventListener('click', () => addTableColumn('right'));
+  document.getElementById('deleteColBtn').addEventListener('click', deleteTableColumn);
   document.getElementById('insertMermaidBtn').addEventListener('click', insertMermaidBlock);
   document.getElementById('insertHrBtn').addEventListener('click', insertHr);
   document.getElementById('indentBtn').addEventListener('click', () => exec('indent'));

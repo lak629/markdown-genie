@@ -2,14 +2,14 @@
   "name": "markdown-genie",
   "displayName": "Markdown Genie",
   "description": "A VS Code custom editor for Markdown with ribbon formatting, image handling, Mermaid preview, tables, and frontmatter protection.",
-  "version": "0.2.0",
+  "version": "0.2.4",
   "publisher": "local-dev",
   "author": "Lou Kaltz",
   "repository": {
     "type": "git",
     "url": "https://github.com/lak629/markdown-genie"
   },
-  "icon": "./icon/markdown-genie-icon-v2.png",
+  "icon": "./icon/markdown-genie-icon-v8.png",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -34,8 +34,12 @@
         "viewType": "advancedMarkdownWysiwyg.editor",
         "displayName": "Markdown Genie",
         "selector": [
-          { "filenamePattern": "*.md" },
-          { "filenamePattern": "*.markdown" }
+          {
+            "filenamePattern": "*.md"
+          },
+          {
+            "filenamePattern": "*.markdown"
+          }
         ],
         "priority": "option"
       }
@@ -43,7 +47,9 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "prepackage": "npm version patch --no-git-tag-version && npm run compile",
+    "package": "node -e \"const v=require('./package.json').version; require('fs').mkdirSync('build', { recursive: true })\" && vsce package --out build/markdown-genie-$(node -e \"console.log(require('./package.json').version)\").vsix"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
