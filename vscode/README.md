@@ -1,6 +1,10 @@
 # Markdown Genie
 
-By [Lou Kaltz](https://github.com/lak629)
+By [Lou Kaltz](https://markdowngenie.com)
+
+All I wanted was a simple WYSIWYG markdown editor. I could not find one so I made one!  
+
+Below all the steps to build this thing yourself using my repo.  I will gladly take feedback at support@markdowngenie.com.
 
 This is a VS Code Markdown WYSIWYG markdown editor.
 
