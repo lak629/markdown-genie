@@ -422,7 +422,10 @@
       }
       case 'imageSaved': {
         const img = document.createElement('img');
-        img.setAttribute('src', message.previewSrc);
+        const safePreviewSrc = sanitizeImageSrc(message.previewSrc);
+        if (safePreviewSrc) {
+          img.setAttribute('src', safePreviewSrc);
+        }
         img.setAttribute('data-md-src', message.markdownPath);
         img.setAttribute('alt', 'Inserted image');
         insertNodeAtCursor(img);
@@ -454,5 +457,26 @@
 
   function escapeAttribute(value) {
     return escapeHtml(value).replace(/\r\n/g, '&#10;').replace(/[\r\n]/g, '&#10;');
+  }
+
+  function sanitizeImageSrc(value) {
+    const src = String(value || '').trim();
+    if (!src) {
+      return '';
+    }
+
+    if (/^data:image\/(?:png|jpe?g|gif|webp|bmp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(src)) {
+      return src;
+    }
+
+    try {
+      const parsed = new URL(src, window.location.href);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.href;
+      }
+      return '';
+    } catch {
+      return '';
+    }
   }
 })();
