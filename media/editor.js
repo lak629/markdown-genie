@@ -405,7 +405,10 @@
         editorHost.querySelectorAll('img[data-md-src]').forEach((img) => {
           const raw = img.getAttribute('data-md-src');
           if (raw && mappings[raw]) {
-            img.setAttribute('src', mappings[raw]);
+            const safeResolvedSrc = sanitizeImageSrc(mappings[raw]);
+            if (safeResolvedSrc) {
+              img.setAttribute('src', safeResolvedSrc);
+            }
           }
         });
         break;
