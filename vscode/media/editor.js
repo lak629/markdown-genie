@@ -548,7 +548,11 @@
       }
       case 'imageSaved': {
         const img = document.createElement('img');
-        img.setAttribute('src', message.previewSrc);
+        const safePreviewSrc = sanitizeImageSrc(message.previewSrc);
+        if (!safePreviewSrc) {
+          break;
+        }
+        img.setAttribute('src', safePreviewSrc);
         img.setAttribute('data-md-src', message.markdownPath);
         img.setAttribute('alt', 'Inserted image');
         insertNodeAtCursor(img);
@@ -567,6 +571,32 @@
       reader.onload = () => resolve(reader.result);
       reader.readAsDataURL(file);
     });
+  }
+
+  function sanitizeImageSrc(value) {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (trimmed.startsWith('data:')) {
+      return /^data:image\/[a-zA-Z0-9.+-]+;base64,[a-zA-Z0-9+/=]+$/.test(trimmed) ? trimmed : '';
+    }
+
+    try {
+      const parsed = new URL(trimmed, window.location.href);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:' || parsed.protocol === 'blob:') {
+        return parsed.href;
+      }
+    } catch (_) {
+      return '';
+    }
+
+    return '';
   }
 
   function escapeHtml(value) {
