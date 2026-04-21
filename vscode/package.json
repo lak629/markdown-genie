@@ -1,13 +1,13 @@
 {
   "name": "markdown-genie",
   "displayName": "Markdown Genie",
-  "description": "A VS Code custom editor for Markdown with ribbon formatting, image handling, Mermaid preview, tables, and frontmatter protection.",
-  "version": "0.2.4",
-  "publisher": "local-dev",
+  "description": "A simple WYSIWYG editor for Markdown files in VS Code, featuring ribbon formatting, image handling, Mermaid preview, tables, and frontmatter protection.",
+  "version": "1.0.1",
+  "publisher": "louiskaltz",
   "author": "Lou Kaltz",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lak629/markdown-genie"
+    "url": "https://markdowngenie.com"
   },
   "icon": "./icon/markdown-genie-icon-v8.png",
   "engines": {
