@@ -52,7 +52,7 @@
     "package": "node -e \"const v=require('./package.json').version; require('fs').mkdirSync('build', { recursive: true })\" && vsce package --out build/markdown-genie-$(node -e \"console.log(require('./package.json').version)\").vsix"
   },
   "devDependencies": {
-    "@types/node": "^20.14.10",
+    "@types/node": "^25.6.0",
     "@types/vscode": "^1.90.0",
     "typescript": "^5.5.4"
   },
