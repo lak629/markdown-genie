@@ -171,9 +171,12 @@
 
     try {
       const result = await window.mermaid.render(`mermaid-${Date.now()}-${index}`, source);
-      renderHost.innerHTML = result.svg;
+      setMermaidPreviewFrame(renderHost, result.svg);
     } catch (error) {
-      renderHost.innerHTML = `<pre>${escapeHtml(String(error))}</pre>`;
+      clearMermaidPreviewFrame(renderHost);
+      const pre = document.createElement('pre');
+      pre.textContent = String(error);
+      renderHost.replaceChildren(pre);
     }
   }
 
@@ -481,5 +484,63 @@
     } catch {
       return '';
     }
+  }
+
+  function setMermaidPreviewFrame(renderHost, svgMarkup) {
+    clearMermaidPreviewFrame(renderHost);
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'mermaid-preview-frame';
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('title', 'Mermaid diagram preview');
+    iframe.addEventListener('load', () => {
+      try {
+        const doc = iframe.contentDocument;
+        const nextHeight = Math.max(
+          doc?.documentElement?.scrollHeight || 0,
+          doc?.body?.scrollHeight || 0,
+          240
+        );
+        iframe.style.height = `${nextHeight}px`;
+      } catch (_) {
+        iframe.style.height = '240px';
+      }
+    });
+    iframe.srcdoc = getMermaidPreviewDocument(svgMarkup);
+    renderHost.replaceChildren(iframe);
+  }
+
+  function clearMermaidPreviewFrame(renderHost) {
+    renderHost.replaceChildren();
+  }
+
+  function getMermaidPreviewDocument(svgMarkup) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+    }
+
+    body {
+      display: inline-block;
+    }
+
+    svg {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+${svgMarkup}
+</body>
+</html>`;
   }
 })();
