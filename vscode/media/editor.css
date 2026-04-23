@@ -238,6 +238,13 @@ button:focus {
   overflow: auto;
 }
 
+.mermaid-card .mermaid-preview-frame {
+  width: 100%;
+  min-height: 240px;
+  border: 0;
+  background: transparent;
+}
+
 .inline-code {
   background: var(--vscode-textCodeBlock-background);
   padding: 0.15em 0.35em;

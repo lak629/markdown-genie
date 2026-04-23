@@ -26,14 +26,9 @@
       return node.nodeType === Node.ELEMENT_NODE && node.classList?.contains('mermaid-card');
     },
     replacement(_content, node) {
-      const source = node.querySelector('.mermaid-source')?.value || node.getAttribute('data-mermaid-source') || 'graph TD\n  A[Start] --> B[Finish]';
-      return `\n\n\
-\
-\
-\
-\
-\
-\`\`\`mermaid\n${source.trim()}\n\`\`\`\n\n`;
+      const source = node.querySelector('.mermaid-source')?.value || node.querySelector('.mermaid-source')?.textContent || 'graph TD\n  A[Start] --> B[Finish]';
+      const normalizedSource = source.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      return `\n\n\`\`\`mermaid\n${normalizedSource}\n\`\`\`\n\n`;
     }
   });
 
@@ -57,19 +52,22 @@
     breaks: true,
     gfm: true,
     renderer: {
+      html(token) {
+        return escapeHtml(token.text || '');
+      },
       code(token) {
         const text = token.text || '';
         const lang = token.lang || '';
         if (lang.trim().toLowerCase() === 'mermaid') {
           const escaped = escapeHtml(text);
           return `
-            <div class="mermaid-card" contenteditable="false" data-mermaid-source="${escapeAttribute(text)}">
-              <div class="mermaid-toolbar">
+            <div class="mermaid-card" contenteditable="false" data-mdg-owned="true">
+              <div class="mermaid-toolbar" data-mdg-owned="true">
                 <div class="mermaid-title">Mermaid Diagram</div>
-                <button class="rerender-mermaid-btn" type="button">Render</button>
+                <button class="rerender-mermaid-btn" type="button" data-mdg-owned="true">Render</button>
               </div>
-              <textarea class="mermaid-source" spellcheck="false">${escaped}</textarea>
-              <div class="mermaid-render"></div>
+              <textarea class="mermaid-source" spellcheck="false" data-mdg-owned="true">${escaped}</textarea>
+              <div class="mermaid-render" data-mdg-owned="true"></div>
             </div>
           `;
         }
@@ -104,14 +102,7 @@
     frontmatterPanel.hidden = !frontmatter;
     sourceHost.value = bodyMarkdown;
 
-    editorHost.innerHTML = marked.parse(bodyMarkdown);
-    editorHost.querySelectorAll('.mermaid-card').forEach((card) => {
-      const textarea = card.querySelector('.mermaid-source');
-      const data = card.getAttribute('data-mermaid-source');
-      if (textarea && data) {
-        textarea.value = data;
-      }
-    });
+    editorHost.replaceChildren(sanitizeRenderedMarkdown(marked.parse(bodyMarkdown)));
     normalizeEditableMarkup();
     resolveImages();
     renderAllMermaid();
@@ -149,7 +140,7 @@
       return;
     }
 
-    window.mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+    window.mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
 
     const cards = Array.from(editorHost.querySelectorAll('.mermaid-card'));
     for (const [index, card] of cards.entries()) {
@@ -165,20 +156,19 @@
     }
 
     const source = textarea.value || 'graph TD\n  A[Start] --> B[Finish]';
-    card.setAttribute('data-mermaid-source', source);
 
     if (!textarea.hasAttribute('data-listener-added')) {
-      textarea.addEventListener('input', () => {
-        card.setAttribute('data-mermaid-source', textarea.value);
-      });
       textarea.setAttribute('data-listener-added', 'true');
     }
 
     try {
       const result = await window.mermaid.render(`mermaid-${Date.now()}-${index}`, source);
-      renderHost.innerHTML = result.svg;
+      setMermaidPreviewFrame(renderHost, result.svg);
     } catch (error) {
-      renderHost.innerHTML = `<pre>${escapeHtml(String(error))}</pre>`;
+      clearMermaidPreviewFrame(renderHost);
+      const pre = document.createElement('pre');
+      pre.textContent = String(error);
+      renderHost.replaceChildren(pre);
     }
   }
 
@@ -192,13 +182,21 @@
     cloned.querySelectorAll('button').forEach((el) => el.remove());
     cloned.querySelectorAll('.mermaid-card').forEach((card) => {
       const textarea = card.querySelector('.mermaid-source');
-      const source = textarea?.value || card.getAttribute('data-mermaid-source') || '';
-      card.setAttribute('data-mermaid-source', source);
+      const source = textarea?.value || textarea?.textContent || '';
+      if (textarea) {
+        textarea.value = source;
+        textarea.textContent = source;
+      }
     });
 
-    const markdown = turndownService.turndown(cloned.innerHTML)
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    const rawMarkdown = turndownService.turndown(cloned);
+    const { text: protectedMarkdown, blocks } = protectFencedBlocks(rawMarkdown);
+    const markdown = restoreProtectedBlocks(
+      protectedMarkdown
+        .replace(/\n{3,}/g, '\n\n')
+        .trim(),
+      blocks
+    );
 
     bodyMarkdown = markdown ? `${markdown}\n` : '';
     return joinFrontmatter(frontmatter, bodyMarkdown);
@@ -206,9 +204,24 @@
 
   function joinFrontmatter(front, body) {
     if (front) {
-      return `${front}\n\n${body}`.replace(/\n{3,}/g, '\n\n');
+      return body ? `${front}\n\n${body}` : `${front}\n`;
     }
     return body;
+  }
+
+  function protectFencedBlocks(markdown) {
+    const blocks = [];
+    const text = markdown.replace(/```[^\n]*\n[\s\S]*?\n```/g, (block) => {
+      const token = `@@MDG_FENCE_${blocks.length}@@`;
+      blocks.push(block);
+      return token;
+    });
+
+    return { text, blocks };
+  }
+
+  function restoreProtectedBlocks(markdown, blocks) {
+    return markdown.replace(/@@MDG_FENCE_(\d+)@@/g, (_match, index) => blocks[Number(index)] || '');
   }
 
   let saveTimer;
@@ -385,14 +398,14 @@
   function insertMermaidBlock() {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
-      <div class="mermaid-card" contenteditable="false" data-mermaid-source="graph TD\n  A[Start] --> B[Review] --> C[Done]">
-        <div class="mermaid-toolbar">
+      <div class="mermaid-card" contenteditable="false" data-mdg-owned="true">
+        <div class="mermaid-toolbar" data-mdg-owned="true">
           <div class="mermaid-title">Mermaid Diagram</div>
-          <button class="rerender-mermaid-btn" type="button">Render</button>
+          <button class="rerender-mermaid-btn" type="button" data-mdg-owned="true">Render</button>
         </div>
-        <textarea class="mermaid-source" spellcheck="false">graph TD
+        <textarea class="mermaid-source" spellcheck="false" data-mdg-owned="true">graph TD
   A[Start] --> B[Review] --> C[Done]</textarea>
-        <div class="mermaid-render"></div>
+        <div class="mermaid-render" data-mdg-owned="true"></div>
       </div>
     `;
     insertNodeAtCursor(wrapper.firstElementChild);
@@ -408,6 +421,87 @@
     code.textContent = text;
     pre.appendChild(code);
     insertNodeAtCursor(pre);
+    scheduleSave();
+  }
+
+  function getInlineCodeAncestor(node) {
+    let current = node;
+    while (current && current !== editorHost) {
+      if (current.nodeType === Node.ELEMENT_NODE && current.nodeName === 'CODE' && current.classList?.contains('inline-code')) {
+        return current;
+      }
+      current = current.parentNode;
+    }
+    return null;
+  }
+
+  function isExactInlineCodeSelection(range, codeNode) {
+    const codeRange = document.createRange();
+    codeRange.selectNodeContents(codeNode);
+    return (
+      range.compareBoundaryPoints(Range.START_TO_START, codeRange) === 0 &&
+      range.compareBoundaryPoints(Range.END_TO_END, codeRange) === 0
+    );
+  }
+
+  function unwrapInlineCode(codeNode) {
+    const fragment = document.createDocumentFragment();
+    while (codeNode.firstChild) {
+      fragment.appendChild(codeNode.firstChild);
+    }
+
+    const parent = codeNode.parentNode;
+    if (!parent) {
+      return null;
+    }
+
+    parent.replaceChild(fragment, codeNode);
+    return parent;
+  }
+
+  function toggleInlineCode() {
+    editorHost.focus();
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!editorHost.contains(range.commonAncestorContainer)) {
+      return;
+    }
+
+    const startCode = getInlineCodeAncestor(range.startContainer);
+    const endCode = getInlineCodeAncestor(range.endContainer);
+    if (startCode && startCode === endCode && isExactInlineCodeSelection(range, startCode)) {
+      const parent = unwrapInlineCode(startCode);
+      if (parent) {
+        parent.normalize();
+      }
+      scheduleSave();
+      return;
+    }
+
+    if (range.collapsed) {
+      return;
+    }
+
+    const code = document.createElement('code');
+    code.classList.add('inline-code');
+
+    try {
+      range.surroundContents(code);
+    } catch (_) {
+      const fragment = range.extractContents();
+      code.appendChild(fragment);
+      range.insertNode(code);
+    }
+
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(code);
+    selection.removeAllRanges();
+    selection.addRange(nextRange);
     scheduleSave();
   }
 
@@ -457,6 +551,7 @@
     button.addEventListener('click', () => formatBlock(button.getAttribute('data-block')));
   });
 
+  document.getElementById('toggleInlineCodeBtn').addEventListener('click', toggleInlineCode);
   document.getElementById('toggleCodeBlock').addEventListener('click', toggleCodeBlock);
   document.getElementById('insertTableBtn').addEventListener('click', () => insertTable(3, 3));
   document.getElementById('addRowAboveBtn').addEventListener('click', () => addTableRow('above'));
@@ -600,6 +695,119 @@
     }
 
     return '';
+  }
+
+  function sanitizeRenderedMarkdown(html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+
+    template.content.querySelectorAll('script, iframe, object, embed, form, input, button, textarea, select, option, link[rel="import"], meta[http-equiv="refresh"]').forEach((node) => {
+      if (node.closest('[data-mdg-owned="true"]')) {
+        return;
+      }
+      node.remove();
+    });
+
+    template.content.querySelectorAll('*').forEach((element) => {
+      Array.from(element.attributes).forEach((attribute) => {
+        const name = attribute.name.toLowerCase();
+
+        if (name.startsWith('on')) {
+          element.removeAttribute(attribute.name);
+          return;
+        }
+
+        if ((name === 'src' || name === 'href' || name === 'xlink:href') && !isSafeUrl(attribute.value)) {
+          element.removeAttribute(attribute.name);
+        }
+      });
+    });
+
+    return template.content.cloneNode(true);
+  }
+
+  function setMermaidPreviewFrame(renderHost, svgMarkup) {
+    clearMermaidPreviewFrame(renderHost);
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'mermaid-preview-frame';
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('title', 'Mermaid diagram preview');
+    iframe.addEventListener('load', () => {
+      try {
+        const doc = iframe.contentDocument;
+        const nextHeight = Math.max(
+          doc?.documentElement?.scrollHeight || 0,
+          doc?.body?.scrollHeight || 0,
+          240
+        );
+        iframe.style.height = `${nextHeight}px`;
+      } catch (_) {
+        iframe.style.height = '240px';
+      }
+    });
+    iframe.srcdoc = getMermaidPreviewDocument(svgMarkup);
+    renderHost.replaceChildren(iframe);
+  }
+
+  function clearMermaidPreviewFrame(renderHost) {
+    renderHost.replaceChildren();
+  }
+
+  function getMermaidPreviewDocument(svgMarkup) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+    }
+
+    body {
+      display: inline-block;
+    }
+
+    svg {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+${svgMarkup}
+</body>
+</html>`;
+  }
+
+  function isSafeUrl(value) {
+    if (typeof value !== 'string') {
+      return false;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return false;
+    }
+
+    if (trimmed.startsWith('#')) {
+      return true;
+    }
+
+    if (trimmed.startsWith('data:')) {
+      return /^data:image\/[a-zA-Z0-9.+-]+;base64,[a-zA-Z0-9+/=]+$/i.test(trimmed);
+    }
+
+    try {
+      const parsed = new URL(trimmed, window.location.href);
+      return parsed.protocol === 'https:' || parsed.protocol === 'http:' || parsed.protocol === 'blob:';
+    } catch (_) {
+      return false;
+    }
   }
 
   function escapeHtml(value) {
